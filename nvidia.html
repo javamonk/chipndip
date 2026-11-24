@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHIPS &amp; DIPS — Market-Driven Gourmet Snacks</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        cream: '#FAF8F5',
+                        ink: '#141413',
+                        bull: '#10B981',
+                        bear: '#EF4444',
+                    },
+                    boxShadow: {
+                        'card': '0 4px 20px -2px rgba(20, 20, 19, 0.06), 0 1px 3px -1px rgba(20, 20, 19, 0.04)',
+                        'card-hover': '0 12px 28px -4px rgba(20, 20, 19, 0.11), 0 4px 10px -2px rgba(20, 20, 19, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #FAF8F5;
+            color: #141413;
+            overflow-x: hidden;
+        }
+
+        /* Smooth transitions for market shifts */
+        .market-transition {
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Subtle card lift */
+        .snack-card:not(.is-locked):hover {
+            transform: translateY(-3px);
+        }
+
+        /* Pulse dot animation */
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.45; transform: scale(0.85); }
+        }
+        .animate-dot {
+            animation: pulse-dot 1.8s infinite ease-in-out;
+        }
+
+        /* Custom scrollbar for bag drawer */
+        .bag-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .bag-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .bag-scroll::-webkit-scrollbar-thumb {
+            background: #D6D3CD;
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased min-h-screen flex flex-col selection:bg-ink selection:text-white">
+
+    <!-- ===================================================================== -->
+    <!-- 1. STICKY NVDA MARKET CONTROL BAR & TOP NAVIGATION                    -->
+    <!-- ===================================================================== -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200/90">
+        <!-- Subtle Auto-Sim Countdown Progress Bar -->
+        <div class="w-full h-1 bg-stone-100 overflow-hidden">
+            <div id="sim-progress-bar" class="h-full w-0 bg-bull transition-none"></div>
+        </div>
+
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+            
+            <!-- Brand Identity -->
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-ink text-cream flex items-center justify-center font-black text-base tracking-tighter shadow-sm">
+                    C&amp;D
+                </div>
+                <div>
+                    <div class="text-base sm:text-lg font-extrabold tracking-tight leading-none text-ink">
+                        CHIPS &amp; DIPS
+                    </div>
+                    <div class="text-[11px] font-medium text-stone-500 mt-0.5 hidden sm:block">
+                        NVDA-Indexed Gourmet Provisions
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Market Switcher + Live Auto-Sim -->
+            <div class="flex items-center gap-2 order-3 lg:order-2 w-full lg:w-auto justify-between sm:justify-center bg-stone-100/90 p-1 rounded-xl border border-stone-200/80">
+                <!-- Climbing State Button -->
+                <button id="btn-market-up" onclick="setMarketState('UP', true)" class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold market-transition bg-white text-ink shadow-sm border border-stone-200/80">
+                    <span class="w-2 h-2 rounded-full bg-bull"></span>
+                    <span>NVDA Climbing <span class="font-mono text-bull ml-0.5">+3.42%</span></span>
+                </button>
+
+                <!-- Dipping State Button -->
+                <button id="btn-market-down" onclick="setMarketState('DOWN', true)" class="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold market-transition text-stone-500 hover:text-ink border border-transparent">
+                    <span class="w-2 h-2 rounded-full bg-bear/50"></span>
+                    <span>NVDA Dipping <span class="font-mono text-bear ml-0.5">-2.85%</span></span>
+                </button>
+
+                <!-- Divider -->
+                <div class="h-5 w-px bg-stone-300/80 mx-0.5 hidden sm:block"></div>
+
+                <!-- Live Market Sim Auto-Toggle -->
+                <button id="btn-live-sim" onclick="toggleLiveSim()" title="Auto-toggle market every 6 seconds for client demos" class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold market-transition text-stone-600 hover:text-ink hover:bg-white/70">
+                    <span id="sim-indicator-dot" class="w-2 h-2 rounded-full bg-stone-400"></span>
+                    <span class="hidden sm:inline">Live Sim</span>
+                    <span id="sim-status-label" class="font-mono text-[10px] uppercase px-1.5 py-0.5 rounded bg-stone-200/80 text-stone-600">OFF</span>
+                </button>
+            </div>
+
+            <!-- Live Price Ticker + Order Bag Button -->
+            <div class="flex items-center gap-2.5 order-2 lg:order-3">
+                <!-- Simulated NVDA Price Pill -->
+                <div id="nvda-price-pill" class="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-bold market-transition bg-emerald-50/90 border-emerald-200 text-emerald-900">
+                    <span id="nvda-dot" class="w-2 h-2 rounded-full bg-bull animate-dot"></span>
+                    <span id="nvda-price-text">NVDA $142.80 ▲</span>
+                </div>
+
+                <!-- Bag Button -->
+                <button onclick="openBag()" class="relative flex items-center gap-2 px-3.5 py-2 rounded-xl bg-ink text-white text-xs sm:text-sm font-bold hover:bg-stone-800 active:scale-[0.98] transition shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    <span>Bag</span>
+                    <span id="bag-badge" class="ml-0.5 px-1.5 py-0.5 text-[11px] font-mono font-extrabold rounded-full bg-bull text-ink">
+                        0
+                    </span>
+                </button>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- ===================================================================== -->
+    <!-- MAIN STOREFRONT CONTENT                                               -->
+    <!-- ===================================================================== -->
+    <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex-1 space-y-12">
+
+        <!-- 2. DYNAMIC EDITORIAL HERO BANNER -->
+        <section id="hero-banner" class="relative overflow-hidden rounded-3xl bg-white border border-stone-200/90 p-7 sm:p-11 shadow-card market-transition">
+            <!-- Subtle decorative ambient glow -->
+            <div id="hero-glow" class="pointer-events-none absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-15 blur-3xl bg-bull market-transition"></div>
+
+            <div class="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div class="max-w-2xl space-y-3">
+                    <!-- Status Eyebrow Pill -->
+                    <div id="hero-eyebrow" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-50 text-emerald-800 border border-emerald-200 market-transition">
+                        <span id="hero-eyebrow-dot" class="w-2 h-2 rounded-full bg-bull"></span>
+                        <span id="hero-eyebrow-text">BULL MARKET SESSION • CHIPS ACTIVE</span>
+                    </div>
+
+                    <!-- Dynamic Headline -->
+                    <h1 id="hero-headline" class="text-3xl sm:text-5xl font-black tracking-tight text-ink leading-[1.08]">
+                        NVDA IS UP — CHIPS ARE UNLOCKED.
+                    </h1>
+
+                    <!-- Dynamic Subtitle -->
+                    <p id="hero-subtitle" class="text-sm sm:text-base text-stone-600 leading-relaxed max-w-xl">
+                        Market is green, bags are open. Stock up on kettle chips and tortilla crisps while momentum holds. Dips are locked until the next pullback.
+                    </p>
+                </div>
+
+                <!-- Right Side Quick Arbitrage Tip Card -->
+                <div class="shrink-0 bg-cream border border-stone-200/90 rounded-2xl p-4 sm:p-5 max-w-xs space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-ink">
+                        <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                        <span>Trader’s Tip</span>
+                    </div>
+                    <p class="text-xs text-stone-600 leading-relaxed">
+                        Items added to your bag stay <span class="font-semibold text-ink">locked in at execution</span> when the ticker flips. Grab chips on the rally and dips on the pullback to unlock the <span class="font-semibold text-ink">Market Arbitrage Combo</span>.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. CHIPS CATEGORY SECTION -->
+        <section class="space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-3.5">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-black tracking-tight text-ink">CHIPS</h2>
+                    <span class="text-xs font-medium text-stone-500 hidden sm:inline">Small-batch kettle &amp; stone-ground crisps</span>
+                </div>
+                <div id="chips-section-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 market-transition">
+                    <span class="w-2 h-2 rounded-full bg-bull"></span>
+                    <span>UNLOCKED • NVDA CLIMBING</span>
+                </div>
+            </div>
+
+            <div id="chips-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Rendered via JavaScript -->
+            </div>
+        </section>
+
+        <!-- 4. DIPS CATEGORY SECTION -->
+        <section class="space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-3.5">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-2xl font-black tracking-tight text-ink">DIPS</h2>
+                    <span class="text-xs font-medium text-stone-500 hidden sm:inline">House-made guac, fire-roasted salsa &amp; queso</span>
+                </div>
+                <div id="dips-section-badge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-500 border border-stone-200 market-transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>LOCKED • UNLOCKS WHEN NVDA DIPS</span>
+                </div>
+            </div>
+
+            <div id="dips-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Rendered via JavaScript -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Minimal Footer -->
+    <footer class="border-t border-stone-200/80 bg-white/60 py-6 mt-12">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-stone-500">
+            <div class="font-semibold text-ink">CHIPS &amp; DIPS — Market-Indexed Gourmet Snacks</div>
+            <div>Simulated NVDA market feed for interactive storefront demonstration.</div>
+        </div>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- 5. TOAST NOTIFICATION (NON-INTRUSIVE FEEDBACK)                        -->
+    <!-- ===================================================================== -->
+    <div id="toast-container" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 pointer-events-none flex flex-col items-center gap-2"></div>
+
+    <!-- ===================================================================== -->
+    <!-- 6. SLIDE-OVER ORDER BAG DRAWER                                        -->
+    <!-- ===================================================================== -->
+    <div id="bag-backdrop" onclick="closeBag()" class="fixed inset-0 bg-ink/40 backdrop-blur-[2px] z-40 hidden opacity-0 transition-opacity duration-200"></div>
+
+    <aside id="bag-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-white border-l border-stone-200 z-50 transform translate-x-full transition-transform duration-300 ease-out flex flex-col shadow-2xl">
+        
+        <!-- Drawer Header -->
+        <div class="px-6 py-5 border-b border-stone-200 flex items-center justify-between bg-cream/60">
+            <div>
+                <h2 class="text-lg font-black tracking-tight text-ink">ORDER BAG</h2>
+                <p id="bag-market-note" class="text-xs text-stone-500 mt-0.5">
+                    Current Session: NVDA Climbing (+3.42%)
+                </p>
+            </div>
+            <button onclick="closeBag()" aria-label="Close bag" class="w-9 h-9 rounded-xl border border-stone-200 bg-white flex items-center justify-center text-stone-600 hover:text-ink hover:border-stone-400 transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Arbitrage Combo Banner (Appears when bag contains >= 1 Chip AND >= 1 Dip) -->
+        <div id="arbitrage-banner" class="hidden mx-6 mt-5 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-amber-50 to-rose-50 border border-amber-300/80 shadow-sm">
+            <div class="flex items-start gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-amber-400/20 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-xs font-extrabold uppercase tracking-wider text-ink flex items-center gap-1.5">
+                        <span>Market Arbitrage Combo Unlocked!</span>
+                    </div>
+                    <p class="text-xs text-stone-600 mt-0.5 leading-relaxed">
+                        You successfully played both sides of the NVDA ticker to pair crispy chips with fresh dip.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bag Items List -->
+        <div id="bag-items-list" class="flex-1 overflow-y-auto bag-scroll px-6 py-5 space-y-3.5">
+            <!-- Rendered via JavaScript -->
+        </div>
+
+        <!-- Drawer Footer / Checkout Summary -->
+        <div class="p-6 border-t border-stone-200 bg-cream/80 space-y-4">
+            <div class="space-y-1.5 text-sm">
+                <div class="flex justify-between text-stone-500">
+                    <span>Subtotal</span>
+                    <span id="bag-subtotal" class="font-mono font-medium text-ink">$0.00</span>
+                </div>
+                <div class="flex justify-between text-stone-500">
+                    <span>Execution Fee</span>
+                    <span class="font-mono text-xs font-bold text-bull uppercase">FREE</span>
+                </div>
+                <div class="flex justify-between text-base font-black text-ink pt-2 border-t border-stone-200/80">
+                    <span>Order Total</span>
+                    <span id="bag-total" class="font-mono">$0.00</span>
+                </div>
+            </div>
+
+            <button id="btn-execute-order" onclick="executeMarketOrder()" disabled class="w-full py-3.5 px-5 rounded-xl bg-ink text-white font-bold text-sm tracking-wide hover:bg-stone-800 disabled:opacity-35 disabled:cursor-not-allowed transition shadow-sm flex items-center justify-center gap-2">
+                <span>Execute Market Order</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ===================================================================== -->
+    <!-- 7. ORDER EXECUTION RECEIPT MODAL                                      -->
+    <!-- ===================================================================== -->
+    <div id="receipt-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-ink/50 backdrop-blur-xs">
+        <div class="bg-white border border-stone-200 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-6 relative animate-[fadeIn_0.2s_ease-out]">
+            
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-bull mx-auto flex items-center justify-center">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div class="text-[11px] font-mono font-bold uppercase tracking-widest text-bull">
+                    ORDER FILLED AT MARKET
+                </div>
+                <h3 class="text-2xl font-black tracking-tight text-ink">Snack Trade Executed</h3>
+                <p id="receipt-ticket" class="text-xs font-mono text-stone-500">
+                    Ticket #NVDA-84920 • NVDA @ $142.80
+                </p>
+            </div>
+
+            <!-- Combo Callout in Receipt if earned -->
+            <div id="receipt-combo-badge" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-center text-xs font-bold text-amber-900">
+                ⚡ Arbitrage Bonus: Full Chips &amp; Dips Pair Achieved!
+            </div>
+
+            <!-- Receipt Line Items -->
+            <div id="receipt-items" class="border-y border-dashed border-stone-300 py-4 space-y-2.5 text-sm max-h-48 overflow-y-auto">
+                <!-- Rendered via JS -->
+            </div>
+
+            <div class="flex items-center justify-between text-base font-black text-ink">
+                <span>Total Settled</span>
+                <span id="receipt-total" class="font-mono">$0.00</span>
+            </div>
+
+            <button onclick="closeReceipt()" class="w-full py-3 rounded-xl bg-ink text-white font-bold text-sm hover:bg-stone-800 transition">
+                Back to Storefront
+            </button>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- JAVASCRIPT APPLICATION LOGIC & BESPOKE FOOD SVGS                      -->
+    <!-- ===================================================================== -->
+    <script>
+        // ---------------------------------------------------------------------
+        // PRODUCT CATALOG WITH BESPOKE APPETIZING SVG ILLUSTRATIONS
+        // ---------------------------------------------------------------------
+        const PRODUCTS = [
+            // CHIPS (Unlocked when NVDA is Climbing)
+            {
+                id: 'chip-kettle',
+                category: 'CHIP',
+                name: 'Sea Salt Kettle Chips',
+                price: 4.50,
+                weight: '5 oz bag',
+                tag: 'BESTSELLER',
+                description: 'Thick-cut, golden crunch, flaky Maldon sea salt.',
+                accentBg: 'bg-amber-50/90',
+                svg: `
+                    <svg viewBox="0 0 120 120" class="w-24 h-24 drop-shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="46" fill="#FEF3C7"/>
+                        <!-- Back Potato Chip -->
+                        <path d="M35 66C31 50 46 34 65 36C82 38 92 53 86 68C80 83 59 87 45 80C38 76 37 72 35 66Z" fill="#F59E0B" stroke="#B45309" stroke-width="2.5"/>
+                        <!-- Front Folded Kettle Chip -->
+                        <path d="M28 72C26 55 44 43 64 47C83 51 94 67 86 80C78 92 55 92 40 85C32 81 29 77 28 72Z" fill="#FBBF24" stroke="#92400E" stroke-width="2.5"/>
+                        <!-- Golden Crisp Bubbles -->
+                        <ellipse cx="52" cy="63" rx="5" ry="3.5" transform="rotate(-15 52 63)" fill="#D97706" opacity="0.55"/>
+                        <ellipse cx="69" cy="70" rx="6" ry="4" transform="rotate(12 69 70)" fill="#D97706" opacity="0.55"/>
+                        <ellipse cx="45" cy="74" rx="3.5" ry="2.5" fill="#D97706" opacity="0.45"/>
+                        <!-- Flaky Maldon Sea Salt Crystals -->
+                        <rect x="57" y="54" width="3.5" height="3.5" rx="0.8" transform="rotate(20 57 54)" fill="#FFFFFF"/>
+                        <rect x="64" y="61" width="3" height="3" rx="0.8" transform="rotate(-15 64 61)" fill="#FFFFFF"/>
+                        <rect x="49" y="68" width="3.5" height="3.5" rx="0.8" transform="rotate(35 49 68)" fill="#FFFFFF"/>
+                        <rect x="74" y="64" width="2.8" height="2.8" rx="0.8" fill="#FFFFFF"/>
+                    </svg>
+                `
+            },
+            {
+                id: 'chip-tortilla',
+                category: 'CHIP',
+                name: 'Stone-Ground Tortilla Chips',
+                price: 5.00,
+                weight: '6 oz bag',
+                tag: 'HOUSE FAVORITE',
+                description: 'Crispy white corn triangles, lightly salted.',
+                accentBg: 'bg-orange-50/80',
+                svg: `
+                    <svg viewBox="0 0 120 120" class="w-24 h-24 drop-shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="46" fill="#FFEDD5"/>
+                        <!-- Back Tortilla Triangle -->
+                        <path d="M68 30L94 76C95.5 78.7 93.6 82 90.5 82H46C42.9 82 41 78.7 42.5 76L61 30C62.5 27.3 66.5 27.3 68 30Z" fill="#F59E0B" stroke="#92400E" stroke-width="2.5" stroke-linejoin="round"/>
+                        <!-- Front Tortilla Triangle -->
+                        <path d="M51 37L81 84C82.7 86.7 80.8 90 77.6 90H26.4C23.2 90 21.3 86.7 23 84L44 37C45.6 34.3 49.4 34.3 51 37Z" fill="#FDE68A" stroke="#92400E" stroke-width="2.5" stroke-linejoin="round"/>
+                        <!-- Toasted Corn Specks -->
+                        <circle cx="48" cy="56" r="2.2" fill="#B45309" opacity="0.65"/>
+                        <circle cx="57" cy="70" r="2.8" fill="#B45309" opacity="0.65"/>
+                        <circle cx="40" cy="75" r="2" fill="#B45309" opacity="0.65"/>
+                        <circle cx="64" cy="81" r="2.2" fill="#B45309" opacity="0.55"/>
+                        <circle cx="50" cy="82" r="1.8" fill="#B45309" opacity="0.5"/>
+                        <!-- Salt Glint -->
+                        <circle cx="45" cy="64" r="1.5" fill="#FFFFFF"/>
+                        <circle cx="53" cy="76" r="1.5" fill="#FFFFFF"/>
+                    </svg>
+                `
+            },
+            {
+                id: 'chip-jalapeno',
+                category: 'CHIP',
+                name: 'Jalapeño Cheddar Ridged Chips',
+                price: 4.75,
+                weight: '5 oz bag',
+                tag: 'SPICY KICK',
+                description: 'Sharp aged cheddar dust with a jalapeño kick.',
+                accentBg: 'bg-emerald-50/70',
+                svg: `
+                    <svg viewBox="0 0 120 120" class="w-24 h-24 drop-shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="46" fill="#FEF3C7"/>
+                        <!-- Ridged Cheddar Chip -->
+                        <rect x="30" y="42" width="58" height="44" rx="20" transform="rotate(-12 30 42)" fill="#F97316" stroke="#9A3412" stroke-width="2.5"/>
+                        <!-- Wavy Ridges -->
+                        <path d="M36 52C44 48 52 54 60 50C68 46 76 52 84 48" stroke="#FDBA74" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M38 62C46 58 54 64 62 60C70 56 78 62 86 58" stroke="#FDBA74" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M40 72C48 68 56 74 64 70C72 66 80 72 88 68" stroke="#FDBA74" stroke-width="2.5" stroke-linecap="round"/>
+                        <!-- Fresh Jalapeño Slice -->
+                        <circle cx="78" cy="74" r="13" fill="#10B981" stroke="#065F46" stroke-width="2.5"/>
+                        <circle cx="78" cy="74" r="7.5" fill="#A7F3D0"/>
+                        <circle cx="76" cy="72" r="1.3" fill="#065F46"/>
+                        <circle cx="80" cy="73" r="1.3" fill="#065F46"/>
+                        <circle cx="78" cy="77" r="1.3" fill="#065F46"/>
+                    </svg>
+                `
+            },
+
+            // DIPS (Unlocked when NVDA is Dipping)
+            {
+                id: 'dip-guac',
+                category: 'DIP',
+                name: 'Fresh Hass Guacamole',
+                price: 6.50,
+                weight: '8 oz tub',
+                tag: 'MADE HOURLY',
+                description: 'Smashed avocados, lime, cilantro, diced red onion.',
+                accentBg: 'bg-emerald-50/80',
+                svg: `
+                    <svg viewBox="0 0 120 120" class="w-24 h-24 drop-shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="46" fill="#D1FAE5"/>
+                        <!-- Guacamole Mound -->
+                        <path d="M30 64C30 48 43 38 60 38C77 38 90 48 90 64H30Z" fill="#65A30D" stroke="#365314" stroke-width="2.5"/>
+                        <path d="M36 62C38 51 48 45 60 45C71 45 81 51 84 62" fill="#84CC16"/>
+                        <!-- Diced Tomato & Red Onion -->
+                        <rect x="49" y="48" width="5" height="5" rx="1" fill="#EF4444"/>
+                        <rect x="64" y="51" width="5" height="5" rx="1" fill="#EF4444"/>
+                        <rect x="57" y="43" width="4" height="4" rx="1" fill="#A855F7"/>
+                        <!-- Cilantro Leaf -->
+                        <path d="M56 56C56 53 60 52 62 55C64 52 68 53 68 56C68 59 62 61 62 61C62 61 56 59 56 56Z" fill="#15803D"/>
+                        <!-- Ceramic Bowl -->
+                        <path d="M26 63H94C94 79 80 90 60 90C40 90 26 79 26 63Z" fill="#1E293B" stroke="#0F172A" stroke-width="2.5"/>
+                        <path d="M32 69H88" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                `
+            },
+            {
+                id: 'dip-salsa',
+                category: 'DIP',
+                name: 'Fire-Roasted Salsa Roja',
+                price: 5.25,
+                weight: '8 oz jar',
+                tag: 'SMOKY & BRIGHT',
+                description: 'Charred Roma tomatoes, chipotle, roasted garlic.',
+                accentBg: 'bg-rose-50/80',
+                svg: `
+                    <svg viewBox="0 0 120 120" class="w-24 h-24 drop-shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="46" fill="#FFE4E6"/>
+                        <!-- Salsa Mound -->
+                        <path d="M31 64C31 50 44 41 60 41C76 41 89 50 89 64H31Z" fill="#DC2626" stroke="#7F1D1D" stroke-width="2.5"/>
+                        <!-- Charred Tomato & Jalapeño Bits -->
+                        <circle cx="50" cy="53" r="3" fill="#991B1B"/>
+                        <circle cx="67" cy="51" r="2.5" fill="#991B1B"/>
+                        <rect x="57" y="47" width="4.5" height="4.5" rx="1" fill="#16A34A"/>
+                        <circle cx="44" cy="58" r="1.5" fill="#FDE047"/>
+                        <circle cx="72" cy="57" r="1.5" fill="#FDE047"/>
+                        <!-- Terracotta Bowl -->
+                        <path d="M26 63H94C94 79 80 90 60 90C40 90 26 79 26 63Z" fill="#EA580C" stroke="#7C2D12" stroke-width="2.5"/>
+                        <path d="M33 70H87" stroke="#FDBA74" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                `
+            },
+            {
+                id: 'dip-queso',
+                category: 'DIP',
+                name: 'Hatch Chile Queso Blanco',
+                price: 6.00,
+                weight: '8 oz tub',
+                tag: 'VELVETY MELT',
+                description: 'Velvety white cheddar melt with roasted New Mexico chiles.',
+                accentBg: 'bg-amber-50/70',
+                svg: `
+                    <svg viewBox="0 0 120 120" class="w-24 h-24 drop-shadow-sm" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="60" cy="60" r="46" fill="#FEF9C3"/>
+                        <!-- Warm Steam Wisps -->
+                        <path d="M48 34C48 30 51 28 51 24" stroke="#A8A29E" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M60 31C60 27 63 25 63 21" stroke="#A8A29E" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M72 34C72 30 75 28 75 24" stroke="#A8A29E" stroke-width="2" stroke-linecap="round"/>
+                        <!-- Melted Queso Blanco & Drip -->
+                        <path d="M30 63C30 49 43 42 60 42C77 42 90 49 90 63C90 66 84 65 81 69C78 73 75 73 73 67C71 63 65 64 62 68C59 72 56 71 54 66C52 63 30 66 30 63Z" fill="#FEF08A" stroke="#CA8A04" stroke-width="2.5" stroke-linejoin="round"/>
+                        <!-- Roasted Hatch Green Chile Flecks -->
+                        <rect x="47" y="51" width="5" height="3.5" rx="1" transform="rotate(-15 47 51)" fill="#15803D"/>
+                        <rect x="65" y="49" width="5.5" height="3.5" rx="1" transform="rotate(18 65 49)" fill="#15803D"/>
+                        <rect x="57" y="56" width="4" height="3" rx="1" fill="#DC2626"/>
+                        <!-- Bowl -->
+                        <path d="M26 63H94C94 79 80 90 60 90C40 90 26 79 26 63Z" fill="#F8FAFC" stroke="#334155" stroke-width="2.5"/>
+                    </svg>
+                `
+            }
+        ];
+
+        // ---------------------------------------------------------------------
+        // APPLICATION STATE
+        // ---------------------------------------------------------------------
+        let marketState = 'UP'; // 'UP' (NVDA Climbing) or 'DOWN' (NVDA Dipping)
+        let bag = [];           // Array of { id, name, category, price, qty, lockedAt }
+        let liveSimActive = false;
+        let simAnimationFrame = null;
+        let simStartTime = null;
+        const SIM_INTERVAL_MS = 6000; // 6-second auto-toggle cycle
+
+        // ---------------------------------------------------------------------
+        // MARKET STATE & LIVE SIMULATOR CONTROLS
+        // ---------------------------------------------------------------------
+        function setMarketState(newState, userInitiated = false) {
+            if (marketState === newState) return;
+            marketState = newState;
+
+            // Reset progress bar timer when manually switched during live sim
+            if (liveSimActive) {
+                simStartTime = performance.now();
+            }
+
+            renderStorefront();
+
+            if (userInitiated) {
+                const msg = newState === 'UP'
+                    ? 'NVDA Climbing (+3.42%) — Chips are now unlocked!'
+                    : 'NVDA Dipping (-2.85%) — Dips are now unlocked!';
+                showToast(msg, newState === 'UP' ? 'bull' : 'bear');
+            }
+        }
+
+        function toggleLiveSim() {
+            liveSimActive = !liveSimActive;
+            const dot = document.getElementById('sim-indicator-dot');
+            const label = document.getElementById('sim-status-label');
+            const btn = document.getElementById('btn-live-sim');
+            const progressBar = document.getElementById('sim-progress-bar');
+
+            if (liveSimActive) {
+                dot.className = 'w-2 h-2 rounded-full bg-bull animate-dot';
+                label.textContent = 'ON';
+                label.className = 'font-mono text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800';
+                btn.classList.add('bg-white', 'shadow-xs', 'text-ink');
+
+                simStartTime = performance.now();
+                runSimLoop();
+                showToast('Live Market Sim started (flips every 6s)', 'neutral');
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-stone-400';
+                label.textContent = 'OFF';
+                label.className = 'font-mono text-[10px] uppercase px-1.5 py-0.5 rounded bg-stone-200/80 text-stone-600';
+                btn.classList.remove('bg-white', 'shadow-xs', 'text-ink');
+
+                if (simAnimationFrame) cancelAnimationFrame(simAnimationFrame);
+                progressBar.style.width = '0%';
+            }
+        }
+
+        function runSimLoop(now = performance.now()) {
+            if (!liveSimActive) return;
+
+            const elapsed = now - simStartTime;
+            const pct = Math.min((elapsed / SIM_INTERVAL_MS) * 100, 100);
+            const progressBar = document.getElementById('sim-progress-bar');
+
+            progressBar.style.width = `${pct}%`;
+            progressBar.className = `h-full transition-none ${marketState === 'UP' ? 'bg-bull' : 'bg-bear'}`;
+
+            if (elapsed >= SIM_INTERVAL_MS) {
+                simStartTime = now;
+                const nextState = marketState === 'UP' ? 'DOWN' : 'UP';
+                setMarketState(nextState, false);
+            }
+
+            simAnimationFrame = requestAnimationFrame(runSimLoop);
+        }
+
+        // ---------------------------------------------------------------------
+        // BAG / CART ACTIONS (LOCKED IN AT EXECUTION)
+        // ---------------------------------------------------------------------
+        function addToBag(productId) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            if (!product) return;
+
+            // Verify item is currently unlocked
+            const isUnlocked = (product.category === 'CHIP' && marketState === 'UP') ||
+                               (product.category === 'DIP' && marketState === 'DOWN');
+            if (!isUnlocked) return;
+
+            const existing = bag.find(item => item.id === productId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                bag.push({
+                    id: product.id,
+                    name: product.name,
+                    category: product.category,
+                    price: product.price,
+                    qty: 1,
+                    lockedPrice: marketState === 'UP' ? '$142.80' : '$134.15'
+                });
+            }
+
+            renderBag();
+            showToast(`Added ${product.name} to Bag`, product.category === 'CHIP' ? 'bull' : 'bear');
+        }
+
+        function updateBagQty(productId, delta) {
+            const index = bag.findIndex(item => item.id === productId);
+            if (index === -1) return;
+
+            bag[index].qty += delta;
+            if (bag[index].qty <= 0) {
+                bag.splice(index, 1);
+            }
+            renderBag();
+        }
+
+        function openBag() {
+            const backdrop = document.getElementById('bag-backdrop');
+            const drawer = document.getElementById('bag-drawer');
+            backdrop.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                backdrop.classList.remove('opacity-0');
+                drawer.classList.remove('translate-x-full');
+            });
+        }
+
+        function closeBag() {
+            const backdrop = document.getElementById('bag-backdrop');
+            const drawer = document.getElementById('bag-drawer');
+            backdrop.classList.add('opacity-0');
+            drawer.classList.add('translate-x-full');
+            setTimeout(() => {
+                backdrop.classList.add('hidden');
+            }, 250);
+        }
+
+        // ---------------------------------------------------------------------
+        // ORDER EXECUTION & RECEIPT MODAL
+        // ---------------------------------------------------------------------
+        function executeMarketOrder() {
+            if (bag.length === 0) return;
+
+            const hasChip = bag.some(i => i.category === 'CHIP');
+            const hasDip = bag.some(i => i.category === 'DIP');
+            const hasCombo = hasChip && hasDip;
+
+            const total = bag.reduce((sum, item) => sum + item.price * item.qty, 0);
+            const ticketNum = Math.floor(10000 + Math.random() * 90000);
+            const currentPrice = marketState === 'UP' ? '$142.80 (+3.42%)' : '$134.15 (-2.85%)';
+
+            // Populate Receipt Modal
+            document.getElementById('receipt-ticket').textContent = `Ticket #NVDA-${ticketNum} • NVDA @ ${currentPrice}`;
+            document.getElementById('receipt-total').textContent = `$${total.toFixed(2)}`;
+
+            const comboBadge = document.getElementById('receipt-combo-badge');
+            if (hasCombo) {
+                comboBadge.classList.remove('hidden');
+            } else {
+                comboBadge.classList.add('hidden');
+            }
+
+            document.getElementById('receipt-items').innerHTML = bag.map(item => `
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="font-bold text-ink">${item.qty}×</span>
+                        <span class="text-stone-700 ml-1">${item.name}</span>
+                    </div>
+                    <span class="font-mono font-semibold text-ink">$${(item.price * item.qty).toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            // Clear bag and close drawer
+            bag = [];
+            renderBag();
+            closeBag();
+
+            // Show Receipt Modal
+            const modal = document.getElementById('receipt-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeReceipt() {
+            const modal = document.getElementById('receipt-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        // ---------------------------------------------------------------------
+        // RENDER STOREFRONT & DYNAMIC LOCKOUTS
+        // ---------------------------------------------------------------------
+        function renderStorefront() {
+            const isUp = marketState === 'UP';
+
+            // 1. Top Control Bar Buttons
+            const btnUp = document.getElementById('btn-market-up');
+            const btnDown = document.getElementById('btn-market-down');
+
+            if (isUp) {
+                btnUp.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold market-transition bg-white text-ink shadow-sm border border-stone-200/80';
+                btnUp.querySelector('span').className = 'w-2 h-2 rounded-full bg-bull animate-dot';
+
+                btnDown.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold market-transition text-stone-500 hover:text-ink border border-transparent';
+                btnDown.querySelector('span').className = 'w-2 h-2 rounded-full bg-bear/40';
+            } else {
+                btnDown.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold market-transition bg-white text-ink shadow-sm border border-stone-200/80';
+                btnDown.querySelector('span').className = 'w-2 h-2 rounded-full bg-bear animate-dot';
+
+                btnUp.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold market-transition text-stone-500 hover:text-ink border border-transparent';
+                btnUp.querySelector('span').className = 'w-2 h-2 rounded-full bg-bull/40';
+            }
+
+            // 2. Price Pill & Bag Note
+            const pricePill = document.getElementById('nvda-price-pill');
+            const nvdaDot = document.getElementById('nvda-dot');
+            const priceText = document.getElementById('nvda-price-text');
+            const bagNote = document.getElementById('bag-market-note');
+
+            if (isUp) {
+                pricePill.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-bold market-transition bg-emerald-50/90 border-emerald-200 text-emerald-900';
+                nvdaDot.className = 'w-2 h-2 rounded-full bg-bull animate-dot';
+                priceText.textContent = 'NVDA $142.80 ▲';
+                bagNote.textContent = 'Current Session: NVDA Climbing (+3.42%)';
+            } else {
+                pricePill.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-mono font-bold market-transition bg-rose-50/90 border-rose-200 text-rose-900';
+                nvdaDot.className = 'w-2 h-2 rounded-full bg-bear animate-dot';
+                priceText.textContent = 'NVDA $134.15 ▼';
+                bagNote.textContent = 'Current Session: NVDA Dipping (-2.85%)';
+            }
+
+            // 3. Dynamic Hero Banner
+            const heroGlow = document.getElementById('hero-glow');
+            const heroEyebrow = document.getElementById('hero-eyebrow');
+            const heroEyebrowDot = document.getElementById('hero-eyebrow-dot');
+            const heroEyebrowText = document.getElementById('hero-eyebrow-text');
+            const heroHeadline = document.getElementById('hero-headline');
+            const heroSubtitle = document.getElementById('hero-subtitle');
+
+            if (isUp) {
+                heroGlow.className = 'pointer-events-none absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-20 blur-3xl bg-bull market-transition';
+                heroEyebrow.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-emerald-50 text-emerald-800 border border-emerald-200 market-transition';
+                heroEyebrowDot.className = 'w-2 h-2 rounded-full bg-bull';
+                heroEyebrowText.textContent = 'BULL MARKET SESSION • CHIPS ACTIVE';
+                heroHeadline.textContent = 'NVDA IS UP — CHIPS ARE UNLOCKED.';
+                heroSubtitle.textContent = 'Market is green, bags are open. Stock up on kettle chips and tortilla crisps while momentum holds. Dips are locked until the next pullback.';
+            } else {
+                heroGlow.className = 'pointer-events-none absolute -right-20 -top-20 w-80 h-80 rounded-full opacity-20 blur-3xl bg-bear market-transition';
+                heroEyebrow.className = 'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-rose-50 text-rose-800 border border-rose-200 market-transition';
+                heroEyebrowDot.className = 'w-2 h-2 rounded-full bg-bear';
+                heroEyebrowText.textContent = 'PULLBACK OPPORTUNITY • DIPS ACTIVE';
+                heroHeadline.textContent = 'NVDA IS DIPPING — BUY THE DIP.';
+                heroSubtitle.textContent = 'Red candles mean green avocados. Fresh guacamole, roasted salsa, and warm queso are unlocked. Chips are locked until the rebound.';
+            }
+
+            // 4. Section Header Badges
+            const chipsBadge = document.getElementById('chips-section-badge');
+            const dipsBadge = document.getElementById('dips-section-badge');
+
+            if (isUp) {
+                chipsBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 market-transition';
+                chipsBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-bull"></span><span>UNLOCKED • NVDA CLIMBING</span>`;
+
+                dipsBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-500 border border-stone-200 market-transition';
+                dipsBadge.innerHTML = `
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>LOCKED • UNLOCKS WHEN NVDA DIPS</span>
+                `;
+            } else {
+                chipsBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-500 border border-stone-200 market-transition';
+                chipsBadge.innerHTML = `
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <span>LOCKED • UNLOCKS WHEN NVDA CLIMBS</span>
+                `;
+
+                dipsBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 market-transition';
+                dipsBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-bear"></span><span>UNLOCKED • NVDA DIPPING</span>`;
+            }
+
+            // 5. Render Product Cards
+            const chipsGrid = document.getElementById('chips-grid');
+            const dipsGrid = document.getElementById('dips-grid');
+            chipsGrid.innerHTML = '';
+            dipsGrid.innerHTML = '';
+
+            PRODUCTS.forEach(product => {
+                const isChip = product.category === 'CHIP';
+                const isUnlocked = (isChip && isUp) || (!isChip && !isUp);
+                const lockText = isChip ? 'Unlocks when NVDA climbs' : 'Unlocks when NVDA dips';
+
+                const card = document.createElement('article');
+                card.className = `snack-card relative rounded-2xl border market-transition overflow-hidden flex flex-col justify-between ${
+                    isUnlocked
+                        ? 'bg-white border-stone-200/90 shadow-card hover:shadow-card-hover'
+                        : 'is-locked bg-white/70 border-stone-200/70'
+                }`;
+
+                card.innerHTML = `
+                    <!-- Frosted Lockout Overlay when Inactive -->
+                    ${!isUnlocked ? `
+                        <div class="absolute inset-0 z-20 bg-cream/65 backdrop-blur-[2.5px] flex flex-col items-center justify-center p-5 text-center select-none">
+                            <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/95 border border-stone-200 shadow-sm text-xs font-bold text-stone-700">
+                                <svg class="w-3.5 h-3.5 text-stone-500" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <span>${lockText}</span>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Card Visual Illustration Area -->
+                    <div class="relative ${product.accentBg} px-6 pt-6 pb-4 flex flex-col items-center justify-center border-b border-stone-100 ${!isUnlocked ? 'grayscale opacity-50' : ''}">
+                        <div class="w-full flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-white/90 text-stone-600 border border-stone-200/70">
+                                ${product.tag}
+                            </span>
+                            <span class="text-[11px] font-medium text-stone-500">
+                                ${product.weight}
+                            </span>
+                        </div>
+                        <div class="py-2 transform transition-transform duration-300 ${isUnlocked ? 'group-hover:scale-105' : ''}">
+                            ${product.svg}
+                        </div>
+                    </div>
+
+                    <!-- Card Copy & Action Footer -->
+                    <div class="p-5 flex-1 flex flex-col justify-between space-y-5 ${!isUnlocked ? 'opacity-50' : ''}">
+                        <div class="space-y-1.5">
+                            <div class="flex items-start justify-between gap-2">
+                                <h3 class="font-extrabold text-base text-ink leading-snug">
+                                    ${product.name}
+                                </h3>
+                                <span class="font-mono font-bold text-base text-ink shrink-0">
+                                    $${product.price.toFixed(2)}
+                                </span>
+                            </div>
+                            <p class="text-xs text-stone-600 leading-relaxed">
+                                ${product.description}
+                            </p>
+                        </div>
+
+                        <button 
+                            onclick="addToBag('${product.id}')"
+                            ${isUnlocked ? '' : 'disabled'}
+                            class="w-full py-2.5 px-4 rounded-xl text-xs font-bold tracking-wide transition flex items-center justify-center gap-2 ${
+                                isUnlocked
+                                    ? (isChip
+                                        ? 'bg-ink text-white hover:bg-bull hover:text-ink active:scale-[0.98] shadow-xs'
+                                        : 'bg-ink text-white hover:bg-bear hover:text-white active:scale-[0.98] shadow-xs')
+                                    : 'bg-stone-100 text-stone-400 cursor-not-allowed'
+                            }">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span>Add to Bag</span>
+                        </button>
+                    </div>
+                `;
+
+                if (isChip) {
+                    chipsGrid.appendChild(card);
+                } else {
+                    dipsGrid.appendChild(card);
+                }
+            });
+        }
+
+        // ---------------------------------------------------------------------
+        // RENDER BAG DRAWER & ARBITRAGE COMBO DETECTION
+        // ---------------------------------------------------------------------
+        function renderBag() {
+            const listEl = document.getElementById('bag-items-list');
+            const badgeEl = document.getElementById('bag-badge');
+            const subtotalEl = document.getElementById('bag-subtotal');
+            const totalEl = document.getElementById('bag-total');
+            const executeBtn = document.getElementById('btn-execute-order');
+            const arbitrageBanner = document.getElementById('arbitrage-banner');
+
+            const totalItems = bag.reduce((sum, item) => sum + item.qty, 0);
+            badgeEl.textContent = totalItems;
+            badgeEl.className = `ml-0.5 px-1.5 py-0.5 text-[11px] font-mono font-extrabold rounded-full transition ${
+                marketState === 'UP' ? 'bg-bull text-ink' : 'bg-bear text-white'
+            }`;
+
+            // Check Market Arbitrage Combo (at least 1 Chip AND at least 1 Dip)
+            const hasChip = bag.some(item => item.category === 'CHIP');
+            const hasDip = bag.some(item => item.category === 'DIP');
+            if (hasChip && hasDip) {
+                arbitrageBanner.classList.remove('hidden');
+            } else {
+                arbitrageBanner.classList.add('hidden');
+            }
+
+            if (bag.length === 0) {
+                listEl.innerHTML = `
+                    <div class="h-64 rounded-2xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center p-6 text-center space-y-2">
+                        <div class="w-10 h-10 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
+                        </div>
+                        <div class="text-sm font-bold text-ink">Your snack bag is empty</div>
+                        <p class="text-xs text-stone-500 max-w-[220px]">
+                            Add unlocked chips or dips from the storefront. Items stay locked in even if NVDA flips!
+                        </p>
+                    </div>
+                `;
+                subtotalEl.textContent = '$0.00';
+                totalEl.textContent = '$0.00';
+                executeBtn.disabled = true;
+                return;
+            }
+
+            executeBtn.disabled = false;
+            let subtotal = 0;
+
+            listEl.innerHTML = bag.map(item => {
+                const lineTotal = item.price * item.qty;
+                subtotal += lineTotal;
+                const isChip = item.category === 'CHIP';
+
+                return `
+                    <div class="p-3.5 rounded-2xl border border-stone-200/90 bg-white shadow-2xs flex items-center justify-between gap-3">
+                        <div class="min-w-0 space-y-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                    isChip ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'
+                                }">
+                                    <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                                    </svg>
+                                    Locked in @ ${item.lockedPrice}
+                                </span>
+                            </div>
+                            <div class="font-bold text-sm text-ink truncate">${item.name}</div>
+                            <div class="text-xs font-mono text-stone-500">$${item.price.toFixed(2)} each</div>
+                        </div>
+
+                        <div class="flex flex-col items-end gap-2 shrink-0">
+                            <span class="font-mono font-bold text-sm text-ink">$${lineTotal.toFixed(2)}</span>
+                            <div class="flex items-center border border-stone-200 rounded-lg bg-cream">
+                                <button onclick="updateBagQty('${item.id}', -1)" class="w-7 h-7 flex items-center justify-center text-stone-600 hover:text-ink font-bold text-sm">−</button>
+                                <span class="w-6 text-center font-mono text-xs font-bold text-ink">${item.qty}</span>
+                                <button onclick="updateBagQty('${item.id}', 1)" class="w-7 h-7 flex items-center justify-center text-stone-600 hover:text-ink font-bold text-sm">+</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+            totalEl.textContent = `$${subtotal.toFixed(2)}`;
+        }
+
+        // ---------------------------------------------------------------------
+        // SUBTLE TOAST FEEDBACK
+        // ---------------------------------------------------------------------
+        function showToast(message, tone = 'neutral') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const dotColor = tone === 'bull' ? 'bg-bull' : tone === 'bear' ? 'bg-bear' : 'bg-amber-400';
+
+            toast.className = 'flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-ink text-white text-xs font-semibold shadow-xl border border-stone-700/80 transition-all duration-300 opacity-0 translate-y-2';
+            toast.innerHTML = `
+                <span class="w-2 h-2 rounded-full ${dotColor} shrink-0"></span>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 2400);
+        }
+
+        // Initialize Storefront on Page Load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderStorefront();
+            renderBag();
+        });
+    </script>
+</body>
+</html>
